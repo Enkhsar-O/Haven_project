@@ -25,26 +25,43 @@ public class Player : MonoBehaviour
     [SerializeField] private float arrowDistance = 1f;
 
     [SerializeField] private StageInfo currentStageInfo;
+    private bool onJumping = false;
 
     private float horizontal;
     private bool isGrounded;
     private bool guuUsing = false;
     private GameObject guutemp;
-
+    private Vector2 direction;
     public void Move(InputAction.CallbackContext context)
     {
+        if(guuUsing) return;
         horizontal = context.ReadValue<Vector2>().x;
+        if(horizontal != 0 && !onJumping)
+        {
+            AnimationManager.instance.OnWalk();
+        }
     }
     public void Jump(InputAction.CallbackContext context)
     {
+        if(guuUsing) return;
         Debug.Log("Jumping");
         if (context.performed && IsGrounded())
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpSpeed);
+            AnimationManager.instance.OnJump();
+            onJumping = true;
+        }
+    }
+    void Start()
+    {
+        if (currentStageInfo != null)
+        {
+            currentStageInfo.setGuuNumber();
         }
     }
     void FixedUpdate()
     {
+        
         rb.linearVelocity = new Vector2(horizontal * moveSpeed, rb.linearVelocity.y);
     }
     public void SetCurrentStageInfo(StageInfo stageInfo)
@@ -55,6 +72,7 @@ public class Player : MonoBehaviour
     {
         return currentStageInfo;
     }
+    
    
 
     private bool IsGrounded()
@@ -67,15 +85,37 @@ public class Player : MonoBehaviour
         {
             return;
         }
-        guuUsing = true;
-        guutemp = Instantiate(guuPrefab, transform.position+Vector3.up * 0.5f, Quaternion.identity);
-
+        Debug.Log("Guu Use");
         aimArrow.SetActive(true);
+        guuUsing = true;
+        guutemp = Instantiate(guuPrefab, transform.position+Vector3.up * 3f, Quaternion.identity);
+        StartCoroutine(GuuUseCoroutine());
 
+    }
+    IEnumerator GuuUseCoroutine()
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        yield return new WaitUntil (() => Mouse.current.leftButton.wasReleasedThisFrame);
+        if(guutemp != null)
+        {
+            
+        guutemp.GetComponent<GuuAct>().GuuUse(15f, direction);
+        }
+        
+        aimArrow.SetActive(false);
+        guuUsing = false;
+        guutemp = null;
     }
     void Update()
     {
         isGrounded = groundCheck.IsTouchingLayers(groundLayer);
+        if (isGrounded)
+        {
+            AnimationManager.instance.OnStopJumping();
+            onJumping = false;
+        }
+        
 
         if (GameManager.instance.GetCurrentGameState() != GameState.Playing)
         {
@@ -91,7 +131,7 @@ public class Player : MonoBehaviour
             Vector3 mouseScreen = new Vector3(mousePosition.x,mousePosition.y,-Camera.main.transform.position.z);
 
             Vector2 worldMousePosition =Camera.main.ScreenToWorldPoint(mouseScreen);
-            Vector2 direction = (worldMousePosition - (Vector2)transform.position).normalized;
+            direction = (worldMousePosition - (Vector2)transform.position).normalized;
 
             aimArrow.transform.position = transform.position + (Vector3)(direction * arrowDistance);
 
@@ -99,16 +139,9 @@ public class Player : MonoBehaviour
 
             aimArrow.transform.rotation = Quaternion.Euler(0, 0, angle);
 
-            if (Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                guutemp.GetComponent<GuuAct>().GuuUse(10f, direction);
-
-                guuUsing = false;
-                guutemp = null;
-                aimArrow.SetActive(false);
-            }
         }
     }
+    
     void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Guu"))
