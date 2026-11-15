@@ -4,6 +4,7 @@ using System.Collections;
 public class AnimationManager : MonoBehaviour
 {
     [SerializeField] private Animator transitionAnimator;
+    [SerializeField] private Animator playerAnimator;
     [SerializeField] private GameObject player;
     static public AnimationManager instance;
 
@@ -29,5 +30,21 @@ public class AnimationManager : MonoBehaviour
         player.transform.position = targetPosition;
         
         
+    }
+    public void OnWalk()
+    {
+        playerAnimator.SetTrigger("OnWalk");
+    }
+    public void OnStopWalking()
+    {
+        playerAnimator.SetTrigger("OnStop");
+    }
+    public void OnJump()
+    {
+        playerAnimator.SetTrigger("OnJump");
+    }
+    public void OnStopJumping()
+    {
+        playerAnimator.SetTrigger("OnStop");
     }
 }

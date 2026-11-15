@@ -14,6 +14,9 @@ public class StageInfo : MonoBehaviour
     {
         currentGuuNumber = maxGuuNumber;
         isStageOn = false;
+    }
+    public void setGuuNumber()
+    {
         guuNumberText.text = currentGuuNumber.ToString();
     }
 
